@@ -6,7 +6,7 @@
 # to dynamically render variables and handle missing values gracefully.
 # ==============================================================================
 
-from jinja2 import Environment, BaseLoader
+from jinja2 import BaseLoader, Environment
 
 # Create reusable Jinja environment
 jinja_env = Environment(loader=BaseLoader())

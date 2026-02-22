@@ -1,0 +1,52 @@
+# ── Build / Install artifacts ──────
+.venv/
+build/
+dist/
+*.egg-info/
+__pycache__/
+*.py[cod]
+
+# ── Source control ─────────────────
+.git/
+.gitignore
+
+# ── Environment & secrets ─────────
+.env
+.env.*
+!.env.example
+
+# ── IDE / Editor ───────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# ── Runtime artifacts ──────────────
+logs/
+generated_report/
+users.db
+*.log
+
+# ── Dev tooling ────────────────────
+.pre-commit-config.yaml
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+tests/
+docs/
+
+# ── UV / Lock ──────────────────────
+uv.lock
+
+# ── Notebooks ──────────────────────
+research_and_analyst/notebook/
+*.ipynb
+
+# ── CI/CD ──────────────────────────
+.github/
+Jenkinsfile
+azure-deploy-jenkins.sh
+setup-app-infrastructure.sh
+build-and-push-docker-image.sh
+Dockerfile.jenkins

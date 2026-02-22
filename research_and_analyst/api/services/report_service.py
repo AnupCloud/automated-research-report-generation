@@ -1,19 +1,22 @@
-import uuid
 import os
+import uuid
+
 from fastapi.responses import FileResponse
-from research_and_analyst.utils.model_loader import ModelLoader
-from research_and_analyst.workflows.report_generator_workflow import AutonomousReportGenerator
-from research_and_analyst.logger import GLOBAL_LOGGER
-from research_and_analyst.exception.custom_exception import ResearchAnalystException
 from langgraph.checkpoint.memory import MemorySaver
 
+from research_and_analyst.exception.custom_exception import ResearchAnalystException
+from research_and_analyst.logger import GLOBAL_LOGGER
+from research_and_analyst.utils.model_loader import ModelLoader
+from research_and_analyst.workflows.report_generator_workflow import AutonomousReportGenerator
+
 _shared_memory = MemorySaver()
+
 
 class ReportService:
     def __init__(self):
         self.llm = ModelLoader().load_llm()
         self.reporter = AutonomousReportGenerator(self.llm)
-        self.reporter.memory = _shared_memory 
+        self.reporter.memory = _shared_memory
         self.graph = self.reporter.build_graph()
         self.logger = GLOBAL_LOGGER.bind(module="ReportService")
 
@@ -44,14 +47,14 @@ class ReportService:
         except Exception as e:
             self.logger.error("Error updating feedback", error=str(e))
             raise ResearchAnalystException("Failed to update feedback", e)
-        
+
     def get_report_status(self, thread_id: str):
         """Fetch latest state or final report."""
         try:
             thread = {"configurable": {"thread_id": thread_id}}
             state = self.graph.get_state(thread)
             final_report = state.values.get("final_report")
-            topic = state.values.get("topic", "AI_Report") 
+            topic = state.values.get("topic", "AI_Report")
 
             if final_report:
                 # now topic-based report folder name
@@ -74,8 +77,6 @@ class ReportService:
         for root, _, files in os.walk(report_dir):
             if file_name in files:
                 return FileResponse(
-                    path=os.path.join(root, file_name),
-                    filename=file_name,
-                    media_type="application/octet-stream"
+                    path=os.path.join(root, file_name), filename=file_name, media_type="application/octet-stream"
                 )
         return {"error": f"File {file_name} not found"}

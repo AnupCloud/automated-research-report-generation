@@ -3,11 +3,13 @@ import re
 
 REQUIREMENTS_PATH = "requirements.txt"
 
+
 def get_installed_version(pkg_name):
     try:
         return importlib.metadata.version(pkg_name)
     except importlib.metadata.PackageNotFoundError:
         return None
+
 
 def normalize_package_name(pkg_line):
     """Handles editable installs, extras, and version stripping."""
@@ -17,8 +19,9 @@ def normalize_package_name(pkg_line):
     pkg_name = re.split(r"[=<>!]", pkg_line)[0].strip()
     return pkg_name
 
+
 def update_requirements_file():
-    with open(REQUIREMENTS_PATH, "r") as f:
+    with open(REQUIREMENTS_PATH) as f:
         lines = f.readlines()
 
     new_lines = []
@@ -42,6 +45,7 @@ def update_requirements_file():
         f.write("\n".join(new_lines) + "\n")
 
     print("requirements.txt updated successfully with installed versions.")
+
 
 if __name__ == "__main__":
     update_requirements_file()

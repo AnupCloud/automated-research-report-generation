@@ -1,9 +1,10 @@
 import sys
 import traceback
-from typing import Optional, cast
+from typing import cast
+
 
 class ResearchAnalystException(Exception):
-    def __init__(self, error_message, error_details: Optional[object] = None):
+    def __init__(self, error_message, error_details: object | None = None):
         # Normalize message
         if isinstance(error_message, BaseException):
             norm_msg = str(error_message)
@@ -34,7 +35,7 @@ class ResearchAnalystException(Exception):
 
         # Full pretty traceback (if available)
         if exc_type and exc_tb:
-            self.traceback_str = ''.join(traceback.format_exception(exc_type, exc_value, exc_tb))
+            self.traceback_str = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
         else:
             self.traceback_str = ""
 

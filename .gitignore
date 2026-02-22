@@ -7,16 +7,28 @@ wheels/
 *.egg-info
 
 # Virtual environments
-.venv
+.venv/
 
+# Environment & secrets
 .env
-logs
-archive
 
+# Runtime artifacts
+logs/
+archive/
 generated_report/
+*.log
+
+# Database
+users.db
 
 # macOS
 .DS_Store
 
-# Database
-users.db
+# Tool caches
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/

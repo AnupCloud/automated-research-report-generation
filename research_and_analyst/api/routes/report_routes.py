@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Request, Form
+from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from sqlalchemy.orm import Session
-from research_and_analyst.database.db_config import SessionLocal, User, hash_password, verify_password
+
 from research_and_analyst.api.services.report_service import ReportService
+from research_and_analyst.database.db_config import SessionLocal, User, hash_password, verify_password
 
 router = APIRouter()
 SESSIONS = {}
+
 
 def get_db():
     db = SessionLocal()
@@ -14,11 +15,14 @@ def get_db():
     finally:
         db.close()
 
+
 # ------------------ AUTH ROUTES ------------------ #
+
 
 @router.get("/", response_class=HTMLResponse)
 async def show_login(request: Request):
     return request.app.templates.TemplateResponse("login.html", {"request": request})
+
 
 @router.post("/login", response_class=HTMLResponse)
 async def login(request: Request, username: str = Form(...), password: str = Form(...)):
@@ -37,9 +41,11 @@ async def login(request: Request, username: str = Form(...), password: str = For
         {"request": request, "error": "Invalid username or password"},
     )
 
+
 @router.get("/signup", response_class=HTMLResponse)
 async def show_signup(request: Request):
     return request.app.templates.TemplateResponse("signup.html", {"request": request})
+
 
 @router.post("/signup", response_class=HTMLResponse)
 async def signup(request: Request, username: str = Form(...), password: str = Form(...)):
@@ -57,7 +63,9 @@ async def signup(request: Request, username: str = Form(...), password: str = Fo
     db.refresh(new_user)
     return RedirectResponse(url="/", status_code=302)
 
+
 # ------------------ REPORT ROUTES ------------------ #
+
 
 @router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request):
@@ -66,11 +74,12 @@ async def dashboard(request: Request):
         return RedirectResponse(url="/")
     return request.app.templates.TemplateResponse("dashboard.html", {"request": request, "user": SESSIONS[session_id]})
 
+
 @router.post("/generate_report", response_class=HTMLResponse)
 async def generate_report(request: Request, topic: str = Form(...)):
     service = ReportService()
     result = service.start_report_generation(topic, 3)
-    thread_id = result["thread_id"] 
+    thread_id = result["thread_id"]
 
     return request.app.templates.TemplateResponse(
         "report_progress.html",
@@ -82,8 +91,11 @@ async def generate_report(request: Request, topic: str = Form(...)):
         },
     )
 
+
 @router.post("/submit_feedback", response_class=HTMLResponse)
-async def submit_feedback(request: Request, topic: str = Form(...), feedback: str = Form(...), thread_id: str = Form(...)):
+async def submit_feedback(
+    request: Request, topic: str = Form(...), feedback: str = Form(...), thread_id: str = Form(...)
+):
     service = ReportService()
     service.submit_feedback(thread_id, feedback)
 
@@ -103,6 +115,7 @@ async def submit_feedback(request: Request, topic: str = Form(...), feedback: st
             "thread_id": thread_id,
         },
     )
+
 
 @router.get("/download/{file_name}", response_class=HTMLResponse)
 async def download_report(file_name: str):

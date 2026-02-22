@@ -2,7 +2,8 @@
 print("all ok")
 
 # %%
-import sys, os
+import os
+import sys
 
 # Get project root — one level up from 'research_and_analyst'
 project_root = os.path.abspath(os.path.join(os.getcwd(), "../.."))
@@ -23,25 +24,25 @@ llm=model_loader.load_llm()
 llm.invoke("hi").content
 
 # %%
-from typing import List
-from typing_extensions import TypedDict
-from pydantic import BaseModel, Field
+
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langgraph.checkpoint.memory import MemorySaver
 
 # %%
-from langgraph.graph import StateGraph, START, END
-from langchain_core.messages import AIMessage,HumanMessage , SystemMessage
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, START, StateGraph
+from pydantic import BaseModel, Field
+from typing_extensions import TypedDict
 
 # %% [markdown]
 # #health
-# 
+#
 # Analyst(
 #         name="Dr. Neha Patel",
 #         role="Medical Data Scientist",
 #         affiliation="Stanford Medicine",
 #         description="Focuses on predictive models for patient outcomes."
 #         ),
-# 
+#
 # Analyst(
 #     name="Dr. Arun Verma",
 #     role="Ethics Researcher",
@@ -61,11 +62,11 @@ class Analyst(BaseModel):
     role: str = Field(description="Role of the analyst in the context of the topic.")
     affiliation: str = Field(description="Primary affiliation of the analyst.")
     description: str = Field(description="Description of the analyst focus, concerns, and motives.")
-    
+
     @property
     def persona(self) -> str:
         return f"Name: {self.name}\nRole: {self.role}\nAffiliation: {self.affiliation}\nDescription: {self.description}\n"
-    
+
 
 # %%
 Analyst(
@@ -97,21 +98,21 @@ print(analyst.persona)
 
 # %%
 class Perspectives(BaseModel):
-       analysts: List[Analyst] = Field(description="Comprehensive list of analysts with their roles and affiliations.")
+       analysts: list[Analyst] = Field(description="Comprehensive list of analysts with their roles and affiliations.")
 
 # %%
 class GenerateAnalystsState(TypedDict):
     topic: str #research topic
     max_analysts: int # number of analyst
     human_analyst_feedback: str # Human feedback
-    analysts: List[Analyst] # Analyst asking questions
-    
+    analysts: list[Analyst] # Analyst asking questions
+
 
 # %%
 GenerateAnalystsState(
     topic = "finance",
     max_analysts= 5,
-    human_analyst_feedback= "give the real info",  
+    human_analyst_feedback= "give the real info",
 )
 
 # %%
@@ -143,7 +144,7 @@ print([analyst_instructions.format(
         topic="education",
         max_analysts=4,
         human_analyst_feedback="please exaplain only on AI"
-        
+
         )] + ["Generate the set of analysts."])
 
 # %% [markdown]
@@ -158,20 +159,20 @@ def create_analyst(state:GenerateAnalystsState):
     topic = state["topic"]
     max_analysts = state["max_analysts"]
     human_analyst_feedback = state.get("human_analyst_feedback","")
-    
+
     structured_llm = llm.with_structured_output(Perspectives)
-    
+
     system_messages = analyst_instructions.format(
         topic=topic,
         max_analysts=max_analysts,
         human_analyst_feedback=human_analyst_feedback
-        
+
         )
     analysts = structured_llm.invoke([SystemMessage(content=system_messages)]+ [HumanMessage(content="Generate the set of analysts.")])
-    
+
     # Write the list of analysis to state
     return {"analysts": analysts.analysts}
-    
+
 
 # %%
 create_analyst(
@@ -245,16 +246,16 @@ for event in graph.stream({"topic":topic,
              thread,
              stream_mode= "values"):
     analysts = event.get('analysts', '')
-    
+
     if analysts:
         for analyst in analysts:
             print(f"Name: {analyst.name}")
             print(f"Affiliation: {analyst.affiliation}")
             print(f"Role: {analyst.role}")
             print(f"Description: {analyst.description}")
-            print("-" * 50)  
-            
-        
+            print("-" * 50)
+
+
 
 # %%
 state = graph.get_state(thread)
@@ -279,19 +280,19 @@ memory.storage.items()
 
 # for thread_id, ns_dict in memory.storage.items():
 #     print(f"\n Thread ID: {thread_id}")
-    
+
 #     # ns_dict = defaultdict(dict, {'': {...}})
 #     for ns, ckpts in ns_dict.items():
 #         print(f"  Namespace: '{ns}'")
-        
+
 #         # ckpts = dict of {checkpoint_id: (packed_values, packed_metadata, parent_id)}
 #         for ckpt_id, (packed_values, packed_metadata, parent_id) in ckpts.items():
 #             print(f"    Checkpoint ID: {ckpt_id}")
-            
+
 #             # Decode msgpack binary
 #             values = msgpack.unpackb(packed_values[1], raw=False)
 #             meta = msgpack.unpackb(packed_metadata[1], raw=False)
-            
+
 #             print(f"    Values keys: {list(values.keys())}")
 #             print(f"    Parent ID: {parent_id}")
 #             print(f"    Metadata: {meta}")
@@ -312,14 +313,14 @@ for event in graph.stream({"topic":topic,
              thread,
              stream_mode= "values"):
     analysts = event.get('analysts', '')
-    
+
     if analysts:
         for analyst in analysts:
             print(f"Name: {analyst.name}")
             print(f"Affiliation: {analyst.affiliation}")
             print(f"Role: {analyst.role}")
             print(f"Description: {analyst.description}")
-            print("-" * 50)  
+            print("-" * 50)
 
 # %%
 state = graph.get_state(thread)
@@ -408,7 +409,7 @@ for analyst in analysts:
     print(f"Affiliation: {analyst.affiliation}")
     print(f"Role: {analyst.role}")
     print(f"Description: {analyst.description}")
-    print("-" * 50) 
+    print("-" * 50)
 
 # %%
 "The benefits of adopting LangGraph as an agent framework"
@@ -424,16 +425,19 @@ print(docs[0].page_content[:500])
 
 # %%
 from langchain_community.document_loaders import WikipediaLoader
+
 docs = WikipediaLoader(query="The benefits of adopting AWS Cloud").load()
 print(docs[0].page_content[:500])
 
 # %%
 from langchain_community.document_loaders import WikipediaLoader
+
 docs = WikipediaLoader(query="The benefits of adopting AWS Cloud").load()
 print(docs)
 
 # %%
 from langchain_community.document_loaders import WikipediaLoader
+
 docs = WikipediaLoader(query="AWS").load()
 print(docs[0].page_content[:500])
 
@@ -449,12 +453,13 @@ print(docs)
 # ## Second Workflow
 
 # %%
-from langchain_community.tools.tavily_search import TavilySearchResults
-
 # %%
 from dotenv import load_dotenv
+from langchain_community.tools.tavily_search import TavilySearchResults
+
 load_dotenv()
 import os
+
 tavily_api_key = os.getenv("TAVILY_API_KEY")
 
 # %%
@@ -471,15 +476,17 @@ print(docs[0].page_content[:500])
 
 # %% [markdown]
 # LangChain is a software framework that helps facilitate the integration of large language models (LLMs) into applications. As a language model integration framework, LangChain's use-cases largely overlap with those of language models in general, including document analysis and summarization, chatbots, and code analysis.
-# 
-# 
+#
+#
 # == History ==
-# LangChain was launched in October 2022 as an open source project by Harrison Chase, while working at machine learning startup Robust Intelligence. In April 2023, 
+# LangChain was launched in October 2022 as an open source project by Harrison Chase, while working at machine learning startup Robust Intelligence. In April 2023,
 
 # %%
 import operator
-from typing import  Annotated
+from typing import Annotated
+
 from langgraph.graph import MessagesState
+
 
 class InterviewState(MessagesState):
     max_num_turns: int # Number turns of conversation
@@ -522,15 +529,15 @@ question_instructions.format(goals = analyst.persona)
 # %%
 def generation_question(state:InterviewState):
     """Node to generate the questions"""
-    
+
     #get state
     analyst = state["analyst"]
     messages = state["messages"]
-    
+
     #generate the question
     system_message = question_instructions.format(goals = analyst.persona)
     question = llm.invoke([SystemMessage(content=system_message)]+messages)
-    
+
     #returen the question through state
     return {"messages":[question]}
 
@@ -565,7 +572,7 @@ from langchain_core.messages import get_buffer_string
 
 # %%
 # Search query writing
-search_instructions = SystemMessage(content=f"""You will be given a conversation between an analyst and an expert. 
+search_instructions = SystemMessage(content="""You will be given a conversation between an analyst and an expert. 
 Your goal is to generate a well-structured query for use in retrieval and / or web-search related to the conversation. 
 First, analyze the full conversation.
 Pay particular attention to the final question posed by the analyst.
@@ -578,7 +585,7 @@ def search_web(state:InterviewState):
     """
     structure_llm = llm.with_structured_output(SearchQuery)
     search_query = structure_llm.invoke([search_instructions]+state["messages"])
-    
+
     # Search
     search_docs = tavily_search.invoke(search_query.search_query)
     # Format
@@ -608,10 +615,10 @@ def search_wikipedia(state:InterviewState):
     # Search query
     structured_llm = llm.with_structured_output(SearchQuery)
     search_query = structured_llm.invoke([search_instructions]+state['messages'])
-    
+
     print("*******************************")
     print(search_query)
-    
+
     # Search
     search_docs = WikipediaLoader(query=search_query.search_query).load()
 
@@ -623,8 +630,8 @@ def search_wikipedia(state:InterviewState):
         ]
     )
 
-    return {"context": [formatted_search_docs]} 
-    
+    return {"context": [formatted_search_docs]}
+
 
 # %%
 state = {"max_num_turns":2,"context":[],"analyst":analyst,"interview":"","section":[],'messages': [AIMessage(content="Hello, my name is Alex Thompson, and I'm an analyst interested in understanding the strategic implications of adopting Langgraph for businesses. I'm particularly keen on how this framework can drive innovation and support digital transformation initiatives. Thank you for taking the time to speak with me today, Michael. \n\nTo start, could you explain what Langgraph is and why it's becoming a significant consideration for businesses looking to innovate?", additional_kwargs={'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 79, 'prompt_tokens': 224, 'total_tokens': 303, 'completion_tokens_details': {'accepted_prediction_tokens': 0, 'audio_tokens': 0, 'reasoning_tokens': 0, 'rejected_prediction_tokens': 0}, 'prompt_tokens_details': {'audio_tokens': 0, 'cached_tokens': 0}}, 'model_name': 'gpt-4o-2024-08-06', 'system_fingerprint': 'fp_cbf1785567', 'id': 'chatcmpl-CPRmMT7ufhFyYLhMtNpeguI9W2y6O', 'service_tier': 'default', 'finish_reason': 'stop', 'logprobs': None}, id='run--827b799b-ccb9-422c-a444-402d7ddc4550-0', usage_metadata={'input_tokens': 224, 'output_tokens': 79, 'total_tokens': 303, 'input_token_details': {'audio': 0, 'cache_read': 0}, 'output_token_details': {'audio': 0, 'reasoning': 0}})]}
@@ -672,7 +679,7 @@ And skip the addition of the brackets as well as the Document source preamble in
 
 # %%
 def generate_answer(state:InterviewState):
-   
+
     """ Node to answer a question """
 
     # Get state
@@ -683,33 +690,33 @@ def generate_answer(state:InterviewState):
     # Answer question
     system_message = answer_instructions.format(goals=analyst.persona, context=context)
     answer = llm.invoke([SystemMessage(content=system_message)]+messages)
-            
+
     # Name the message as coming from the expert
     answer.name = "expert"
-    
+
     # Append it to state
     return {"messages": [answer]}
-    
+
 
 # %% [markdown]
 # how many analyst we were doing to be create:
 # 4
-# 
+#
 # max_trun:2
-# 
+#
 # means if atleast 2 expert are giving ans then we can save the result.
 
 # %%
-def route_messages(state: InterviewState, 
+def route_messages(state: InterviewState,
                    name: str = "expert"):
 
     """ Route between question and answer """
-    
+
     # Get messages
     messages = state["messages"]
     max_num_turns = state.get('max_num_turns',2)
 
-    # Check the number of expert answers 
+    # Check the number of expert answers
     num_responses = len(
         [m for m in messages if isinstance(m, AIMessage) and m.name == name]
     )
@@ -718,26 +725,26 @@ def route_messages(state: InterviewState,
     if num_responses >= max_num_turns:
         return 'save_interview'
 
-    # This router is run after each question - answer pair 
+    # This router is run after each question - answer pair
     # Get the last question asked to check if it signals the end of discussion
     last_question = messages[-2]
-    
+
     if "Thank you so much for your help" in last_question.content:
         return 'save_interview'
-    
+
     return "ask_question"
 
 # %%
 def save_interview(state: InterviewState):
-    
+
     """ Save interviews """
 
     # Get messages
     messages = state["messages"]
-    
+
     # Convert interview to a string
     interview = get_buffer_string(messages)
-    
+
     # Save to interviews key
     return {"interview": interview}
 
@@ -802,11 +809,11 @@ def write_section(state: InterviewState):
     interview = state["interview"]
     context = state["context"]
     analyst = state["analyst"]
-   
+
     # Write section using either the gathered source docs from interview (context) or the interview itself (interview)
     system_message = section_writer_instructions.format(focus=analyst.description)
-    section = llm.invoke([SystemMessage(content=system_message)]+[HumanMessage(content=f"Use this source to write your section: {context}")]) 
-                
+    section = llm.invoke([SystemMessage(content=system_message)]+[HumanMessage(content=f"Use this source to write your section: {context}")])
+
     # Append it to state
     return {"sections": [section.content]}
 
@@ -867,20 +874,23 @@ Markdown(interview['sections'][0])
 # ## third Workflow
 
 # %%
-from typing_extensions import TypedDict
-from typing import List, Annotated
 import operator
+from typing import Annotated
+
+from typing_extensions import TypedDict
+
+
 class ResearchGraphState(TypedDict):
     topic: str # Research topic
     max_analysts: int # Number of analysts
     human_analyst_feedback: str # Human feedback
-    analysts: List[Analyst] # Analyst asking questions
+    analysts: list[Analyst] # Analyst asking questions
     sections: Annotated[list, operator.add] # Send() API key
     introduction: str # Introduction for the final report
     content: str # Content for the final report
     conclusion: str # Conclusion for the final report
     final_report: str # Final report
-    
+
 # class InterviewState(MessagesState):
 #     max_num_turns: int # Number turns of conversation
 #     context: Annotated[list, operator.add] # Source docs
@@ -891,16 +901,17 @@ class ResearchGraphState(TypedDict):
 # %%
 from langgraph.types import Send
 
+
 # %%
 def initiate_all_interviews(state:ResearchGraphState):
-    """ This is the "map" step where we run each interview sub-graph using Send API """ 
-    
+    """ This is the "map" step where we run each interview sub-graph using Send API """
+
     #check if human feedback
     human_analyst_feedback=state.get('human_analyst_feedback')
     if human_analyst_feedback:
         # Return to create_analysts
         return "create_analysts"
-    
+
     # Otherwise kick off interviews in parallel via Send() API
     else:
         topic = state["topic"]
@@ -963,10 +974,10 @@ def write_report(state: ResearchGraphState):
 
     # Concat all sections together
     formatted_str_sections = "\n\n".join([f"{section}" for section in sections])
-    
+
     # Summarize the sections into a final report
-    system_message = report_writer_instructions.format(topic=topic, context=formatted_str_sections)    
-    report = llm.invoke([SystemMessage(content=system_message)]+[HumanMessage(content=f"Write a report based upon these memos.")]) 
+    system_message = report_writer_instructions.format(topic=topic, context=formatted_str_sections)
+    report = llm.invoke([SystemMessage(content=system_message)]+[HumanMessage(content="Write a report based upon these memos.")])
     return {"content": report.content}
 
 # %%
@@ -1000,11 +1011,11 @@ def write_introduction(state: ResearchGraphState):
 
     # Concat all sections together
     formatted_str_sections = "\n\n".join([f"{section}" for section in sections])
-    
+
     # Summarize the sections into a final report
-    
-    instructions = intro_conclusion_instructions.format(topic=topic, formatted_str_sections=formatted_str_sections)    
-    intro = llm.invoke([instructions]+[HumanMessage(content=f"Write the report introduction")]) 
+
+    instructions = intro_conclusion_instructions.format(topic=topic, formatted_str_sections=formatted_str_sections)
+    intro = llm.invoke([instructions]+[HumanMessage(content="Write the report introduction")])
     return {"introduction": intro.content}
 
 # %%
@@ -1015,11 +1026,11 @@ def write_conclusion(state: ResearchGraphState):
 
     # Concat all sections together
     formatted_str_sections = "\n\n".join([f"{section}" for section in sections])
-    
+
     # Summarize the sections into a final report
-    
-    instructions = intro_conclusion_instructions.format(topic=topic, formatted_str_sections=formatted_str_sections)    
-    conclusion = llm.invoke([instructions]+[HumanMessage(content=f"Write the report conclusion")]) 
+
+    instructions = intro_conclusion_instructions.format(topic=topic, formatted_str_sections=formatted_str_sections)
+    conclusion = llm.invoke([instructions]+[HumanMessage(content="Write the report conclusion")])
     return {"conclusion": conclusion.content}
 
 # %%
@@ -1043,7 +1054,7 @@ def finalize_report(state: ResearchGraphState):
     return {"final_report": final_report}
 
 # %%
-# Add nodes and edges 
+# Add nodes and edges
 builder = StateGraph(ResearchGraphState)
 builder.add_node("create_analysts", create_analyst)
 builder.add_node("human_feedback", human_feedback)
@@ -1095,7 +1106,7 @@ for event in graph.stream({"topic":topic,"max_analysts":max_analysts}, thread, s
             print(f"Affiliation: {analyst.affiliation}")
             print(f"Role: {analyst.role}")
             print(f"Description: {analyst.description}")
-            print("-" * 50) 
+            print("-" * 50)
 
 # %%
 graph.update_state(thread, {"human_analyst_feedback":"along with the genetive ai in future tell me the future of indian team"}, as_node="human_feedback")
@@ -1110,7 +1121,7 @@ for event in graph.stream({"topic":topic,"max_analysts":max_analysts}, thread, s
             print(f"Affiliation: {analyst.affiliation}")
             print(f"Role: {analyst.role}")
             print(f"Description: {analyst.description}")
-            print("-" * 50) 
+            print("-" * 50)
 
 # %%
 graph.update_state(thread, {"human_analyst_feedback":""}, as_node="human_feedback")

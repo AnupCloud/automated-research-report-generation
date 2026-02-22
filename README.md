@@ -1,128 +1,313 @@
-# Automated Research Report Generation
+# 🤖 Autonomous Research Report Generator
 
-This project is an autonomous research report generation system that uses a multi-agent approach to create detailed and comprehensive reports on a given topic. It leverages LangGraph to orchestrate a workflow of AI agents, each with a specific role in the research and writing process.
+An advanced multi-agent system powered by **LangGraph**, **Google Gemini**, and **Tavily Search** that automates the entire lifecycle of professional research — from persona-driven analysis to finalized PDF/DOCX reports.
 
-## Architecture
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.120%2B-009688.svg)](https://fastapi.tiangolo.com)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-The project is built around a stateful graph, where each node represents a step in the report generation process. The graph is defined using LangGraph, and the state is passed between the nodes.
+---
 
-The main components of the architecture are:
+## ✨ Features
 
-*   **LangGraph:** Orchestrates the workflow of the AI agents.
-*   **LLM:** A Large Language Model is used for generating content, creating analyst personas, and writing the report.
-*   **Tavily Search:** Used for real-time web searches to gather up-to-date information.
-*   **Agents:** The system uses a multi-agent approach, with different agents responsible for different tasks:
-    *   **Analyst Agents:** A set of analyst personas are created with different perspectives on the topic.
-    *   **Interviewer Agent:** Conducts interviews with the analyst agents to gather information.
-    *   **Writer Agents:** Responsible for writing the introduction, main content, and conclusion of the report.
-*   **Prompt Library:** A collection of prompts is used to guide the LLM in its tasks.
-*   **Configuration:** The project uses a configuration file to manage settings.
-*   **Logging and Exception Handling:** The system has robust logging and custom exception handling.
+- **Multi-Agent Pipeline** — Orchestrator, Analyst, Researcher, and Writer agents collaborate autonomously
+- **Human-in-the-Loop** — Pause the pipeline to refine analyst personas before research begins
+- **Parallel Interviews** — Conducts simultaneous web-search-powered interviews with N analysts
+- **Multi-Format Export** — Generate professional PDF and DOCX reports with proper formatting
+- **Multi-Provider LLM** — Switch between Google Gemini, OpenAI GPT, and Groq at runtime
+- **Web UI** — Full FastAPI dashboard with login, signup, and report progress tracking
+- **State Persistence** — Resume interrupted workflows using LangGraph memory checkpoints
+- **Structured Logging** — JSON-formatted logs via structlog for production observability
+- **Docker & CI/CD** — Multi-stage Docker build + Jenkins pipeline for Azure Container Apps
 
-## Workflow
+---
 
-The report generation workflow is a multi-step process orchestrated by LangGraph:
+## 🏗 Architecture Overview
 
-1.  **Create Analysts:** Based on the given topic, the system creates a set of "analyst" personas with different backgrounds and perspectives. This ensures a balanced and comprehensive view of the topic.
-2.  **Human Feedback:** The system pauses for human feedback on the generated analysts. This allows the user to guide the research process and ensure the analysts are aligned with the desired outcome.
-3.  **Conduct Interviews:** The Interviewer Agent conducts a simulated interview with each analyst agent. During the interview, the agents discuss the topic, and the information gathered is used to create the report.
-4.  **Write Report Sections:** The Writer Agents use the information gathered during the interviews to write the introduction, main content, and conclusion of the report.
-5.  **Finalize Report:** The different sections of the report are assembled into a final document.
-6.  **Save Report:** The final report is saved as a DOCX or PDF file.
-
-## Project Structure
-
-```
-/
-├───.gitignore
-├───.python-version
-├───Dockerfile
-├───main.py
-├───pyproject.toml
-├───README.md
-├───requirements.txt
-├───uv.lock
-├───generated_report/
-├───research_and_analyst/
-│   ├───__init__.py
-│   ├───api/
-│   ├───config/
-│   ├───database/
-│   ├───exception/
-│   ├───logger/
-│   ├───notebook/
-│   ├───prompt_lib/
-│   ├───schemas/
-│   ├───utils/
-│   └───workflows/
-└───static/
+```mermaid
+graph TD
+    START((Start)) --> CreateAnalysts[Create Analyst Personas]
+    CreateAnalysts --> HumanFeedback{Human Feedback}
+    HumanFeedback -- Approve --> ConductInterviews[Parallel Interviews]
+    HumanFeedback -- Edit --> CreateAnalysts
+    ConductInterviews --> WriteSections[Write Sections]
+    WriteSections --> IntroConclusion[Intro & Conclusion]
+    IntroConclusion --> Finalize[Finalize Report]
+    Finalize --> Save[Export PDF/DOCX]
+    Save --> END((End))
 ```
 
-### Key Directories
+Each interview is a sub-graph with multi-turn Q&A powered by Tavily web search. See [**docs/ARCHITECTURE.md**](docs/ARCHITECTURE.md) for full system design with detailed Mermaid diagrams.
 
-*   `research_and_analyst/`: This is the core of the project.
-    *   `api/`: Contains the API for the application.
-    *   `config/`: Configuration files.
-    *   `database/`: Database related files.
-    *   `exception/`: Custom exceptions.
-    *   `logger/`: Logging configuration.
-    *   `notebook/`: Jupyter notebooks for experimentation.
-    *   `prompt_lib/`: The library of prompts for the LLM.
-    *   `schemas/`: Pydantic models for data validation.
-    *   `utils/`: Utility functions.
-    *   `workflows/`: The core workflows of the application, defined using LangGraph.
-*   `generated_report/`: The output directory for the generated reports.
-*   `static/`: Static files for the web interface (if any).
+---
 
-## Installation
+## 📁 Project Structure
 
-This project uses `uv` for package management.
+```
+automated-research-report-generation/
+├── research_and_analyst/           # Main Python package
+│   ├── api/                        # FastAPI web application
+│   │   ├── main.py                 # App factory, middleware, health check
+│   │   ├── routes/                 # HTTP route handlers (auth + reports)
+│   │   ├── services/               # Business logic (ReportService)
+│   │   ├── models/                 # Pydantic request/response models
+│   │   └── templates/              # Jinja2 HTML templates (4 pages)
+│   ├── workflows/                  # LangGraph pipelines
+│   │   ├── report_generator_workflow.py    # Main DAG (report lifecycle)
+│   │   └── interview_workflow.py           # Interview sub-graph
+│   ├── schemas/models.py           # Pydantic data models & graph states
+│   ├── prompt_lib/                 # Jinja2 prompt templates
+│   ├── utils/                      # Config & model loaders
+│   ├── database/                   # SQLite + SQLAlchemy (user auth)
+│   ├── logger/                     # Structured logging (structlog)
+│   ├── exception/                  # Custom exception handling
+│   ├── config/configuration.yaml   # LLM & embedding configuration
+│   ├── py.typed                    # PEP 561 type checking marker
+│   └── notebook/                   # Dev notebooks & test scripts
+├── tests/                          # Pytest test suite
+│   ├── conftest.py                 # Shared fixtures
+│   ├── test_models.py              # Data model tests
+│   ├── test_config.py              # Config loader tests
+│   ├── test_api.py                 # API endpoint tests
+│   ├── test_exception.py           # Exception handling tests
+│   └── test_logger.py              # Logger tests
+├── static/                         # CSS & JS assets
+├── generated_report/               # Output: PDF & DOCX reports
+├── docs/                           # Documentation
+│   ├── ARCHITECTURE.md             # Full system architecture
+│   └── PROJECT_FILES.md            # File-by-file descriptions
+├── .github/workflows/ci.yml        # GitHub Actions CI pipeline
+├── pyproject.toml                  # Dependencies, ruff, mypy, pytest config
+├── uv.lock                         # UV lockfile (reproducible installs)
+├── .env.example                    # Environment template
+├── .pre-commit-config.yaml         # Pre-commit hooks config
+├── .dockerignore                   # Docker build exclusions
+├── Dockerfile                      # Multi-stage Docker build
+├── Jenkinsfile                     # CI/CD pipeline (Azure)
+├── CONTRIBUTING.md                 # Contribution guidelines
+├── CHANGELOG.md                    # Version history
+└── LICENSE                         # MIT License
+```
+
+For detailed descriptions of every file, see [**docs/PROJECT_FILES.md**](docs/PROJECT_FILES.md).
+
+---
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-*   Python 3.11 or higher
-*   `uv` package manager. You can install it by following the official instructions: [https://github.com/astral-sh/uv](https://github.com/astral-sh/uv)
-*   Tavily API Key: You need a Tavily API key for the search functionality. You can get one from [https://tavily.com/](https://tavily.com/).
+- **Python 3.11+**
+- **[uv](https://docs.astral.sh/uv/)** — install with `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- **Google AI API Key** — [Get one here](https://aistudio.google.com/apikey)
+- **Tavily API Key** — [Get one here](https://tavily.com)
 
-### Steps
-
-1.  **Clone the repository:**
-
-    ```bash
-    git clone https://github.com/AnupCloud/automated-research-report-generation.git
-    cd automated-research-report-generation
-    ```
-
-2.  **Create a virtual environment:**
-
-    ```bash
-    python -m venv .venv
-    source .venv/bin/activate
-    ```
-
-3.  **Set up your environment variables:**
-
-    Create a `.env` file in the root of the project and add your API keys:
-
-    ```
-    TAVILY_API_KEY="your_tavily_api_key"
-    # Add other API keys for your LLM if needed
-    ```
-
-4.  **Sync the dependencies using `uv`:**
-
-    ```bash
-    uv pip sync --lock-file uv.lock
-    ```
-
-    This will install all the dependencies specified in the `uv.lock` file.
-
-## Usage
-
-To run the report generation pipeline, you can execute the `report_generator_workflow.py` script:
+### Installation
 
 ```bash
-python -m research_and_analyst.workflows.report_generator_workflow
+# Clone the repository
+git clone <repo-url>
+cd automated-research-report-generation
+
+# Install all dependencies (creates .venv automatically)
+uv sync
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your API keys
 ```
 
-This will start the report generation process with a default topic. You can modify the `if __name__ == "__main__":` block in the script to change the topic and other settings.
+### Run the Application
+
+```bash
+# Development server (with auto-reload)
+uv run uvicorn research_and_analyst.api.main:app --reload --port 8000
+
+# Production mode (no reload)
+uv run uvicorn research_and_analyst.api.main:app --host 0.0.0.0 --port 8000
+```
+
+- **Login Page:** http://localhost:8000/
+- **Health Check:** http://localhost:8000/health
+
+### Verify Installation
+
+```bash
+uv run python -c "from research_and_analyst.api.main import app; print('✅ FastAPI OK')"
+uv run python -c "from research_and_analyst.utils.config_loader import load_config; load_config(); print('✅ Config OK')"
+```
+
+---
+
+## 💻 Usage
+
+### Web UI (Recommended)
+
+1. **Sign up** at `http://localhost:8000/signup`
+2. **Log in** at `http://localhost:8000/`
+3. **Enter a research topic** on the dashboard (e.g., "Impact of AI on Healthcare")
+4. **Review analyst personas** — approve or provide feedback to refine them
+5. **Download** the generated PDF/DOCX report from the progress page
+
+### CLI Mode
+
+```bash
+uv run python research_and_analyst/workflows/report_generator_workflow.py
+```
+
+---
+
+## ⚙️ Configuration
+
+### Environment Variables
+
+| Variable | Required | Description |
+|:---------|:--------:|:------------|
+| `GOOGLE_API_KEY` | ✅ | Google Gemini API key |
+| `TAVILY_API_KEY` | ✅ | Tavily web search API key |
+| `LLM_PROVIDER` | ✅ | `google`, `openai`, or `groq` |
+| `OPENAI_API_KEY` | ⬜ | Required if `LLM_PROVIDER=openai` |
+| `GROQ_API_KEY` | ⬜ | Required if `LLM_PROVIDER=groq` |
+
+### LLM Configuration (`research_and_analyst/config/configuration.yaml`)
+
+```yaml
+llm:
+  google:
+    provider: "google"
+    model_name: "gemini-2.0-flash"
+    temperature: 0
+    max_output_tokens: 2048
+  groq:
+    provider: "groq"
+    model_name: "deepseek-r1-distill-llama-70b"
+  openai:
+    provider: "openai"
+    model_name: "gpt-4o"
+```
+
+---
+
+## 🐳 Docker Deployment
+
+```bash
+# Build the image
+docker build -t research-report-app:latest .
+
+# Run with environment file
+docker run -p 8000:8000 --env-file .env research-report-app:latest
+```
+
+### Azure Container Apps (CI/CD)
+
+The project includes a complete Jenkins pipeline for Azure deployment:
+
+1. **Provision infrastructure:** `./setup-app-infrastructure.sh`
+2. **Build & push image:** `./build-and-push-docker-image.sh`
+3. **Deploy via Jenkins:** The `Jenkinsfile` handles the full pipeline
+
+---
+
+## 🛠 Development
+
+### Common Commands
+
+```bash
+uv sync                   # Install all dependencies
+uv sync --extra dev       # Install with dev tools (pytest, ruff, mypy)
+uv lock                   # Regenerate lockfile after editing pyproject.toml
+uv run <cmd>              # Run any command inside the managed .venv
+```
+
+---
+
+## 🧪 Testing & Code Quality
+
+### Run Tests
+
+```bash
+# Install dev dependencies (first time)
+uv sync --extra dev
+
+# Run the full test suite (38 tests)
+uv run pytest
+
+# Run with verbose output
+uv run pytest -v
+
+# Run a specific test file
+uv run pytest tests/test_api.py
+```
+
+### Linting & Formatting (Ruff)
+
+```bash
+# Check for lint issues
+uv run ruff check .
+
+# Auto-fix lint issues
+uv run ruff check --fix .
+
+# Check formatting
+uv run ruff format --check .
+
+# Apply formatting
+uv run ruff format .
+```
+
+### Type Checking (Mypy)
+
+```bash
+uv run mypy research_and_analyst/
+```
+
+### Pre-Commit Hooks
+
+```bash
+# Install hooks (one-time setup)
+uv run pre-commit install
+
+# Run all hooks on staged files
+uv run pre-commit run --all-files
+```
+
+---
+
+## 🔄 CI/CD
+
+### GitHub Actions
+
+The project includes a GitHub Actions CI pipeline (`.github/workflows/ci.yml`) with 3 parallel jobs:
+
+| Job | What it does |
+|:----|:-------------|
+| **Lint & Format** | `ruff check` + `ruff format --check` |
+| **Type Check** | `mypy research_and_analyst/` |
+| **Tests** | `pytest` (38 tests) |
+
+Runs automatically on every push and PR to `main`.
+
+### Jenkins (Azure)
+
+The `Jenkinsfile` pipeline handles Azure Container Apps deployment:
+
+1. **Provision infrastructure:** `./setup-app-infrastructure.sh`
+2. **Build & push image:** `./build-and-push-docker-image.sh`
+3. **Deploy via Jenkins:** Full pipeline from checkout to deployment verification
+
+---
+
+## 📖 Documentation
+
+| Document | Description |
+|:---------|:------------|
+| [Architecture](docs/ARCHITECTURE.md) | Full system design with Mermaid diagrams |
+| [Project Files](docs/PROJECT_FILES.md) | File-by-file component descriptions |
+| [Contributing](CONTRIBUTING.md) | How to contribute |
+| [Changelog](CHANGELOG.md) | Version history |
+
+---
+
+## 📝 License
+
+[MIT License](LICENSE) — Developed by Sunny Savita.

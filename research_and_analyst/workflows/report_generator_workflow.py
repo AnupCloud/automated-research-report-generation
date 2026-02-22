@@ -1,38 +1,36 @@
 import os
-import sys
 import re
+import sys
 from datetime import datetime
-from typing import Optional
+
 from langgraph.types import Send
-from jinja2 import Template
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, "../../"))
 sys.path.append(project_root)
 
-from langgraph.graph import StateGraph, START, END
-from langgraph.checkpoint.memory import MemorySaver
-from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_community.tools.tavily_search import TavilySearchResults
-
 from docx import Document
+from langchain_community.tools.tavily_search import TavilySearchResults
+from langchain_core.messages import HumanMessage, SystemMessage
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, START, StateGraph
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
-from research_and_analyst.schemas.models import (
-    Perspectives,
-    GenerateAnalystsState,
-    ResearchGraphState,
-)
-from research_and_analyst.utils.model_loader import ModelLoader
-from research_and_analyst.workflows.interview_workflow import InterviewGraphBuilder
+from research_and_analyst.exception.custom_exception import ResearchAnalystException
+from research_and_analyst.logger import GLOBAL_LOGGER
 from research_and_analyst.prompt_lib.prompt_locator import (
     CREATE_ANALYSTS_PROMPT,
     INTRO_CONCLUSION_INSTRUCTIONS,
     REPORT_WRITER_INSTRUCTIONS,
 )
-from research_and_analyst.logger import GLOBAL_LOGGER
-from research_and_analyst.exception.custom_exception import ResearchAnalystException
+from research_and_analyst.schemas.models import (
+    GenerateAnalystsState,
+    Perspectives,
+    ResearchGraphState,
+)
+from research_and_analyst.utils.model_loader import ModelLoader
+from research_and_analyst.workflows.interview_workflow import InterviewGraphBuilder
 
 
 class AutonomousReportGenerator:
@@ -43,9 +41,7 @@ class AutonomousReportGenerator:
     def __init__(self, llm):
         self.llm = llm
         self.memory = MemorySaver()
-        self.tavily_search = TavilySearchResults(
-            tavily_api_key="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"
-        )
+        self.tavily_search = TavilySearchResults(tavily_api_key="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")
         self.logger = GLOBAL_LOGGER.bind(module="AutonomousReportGenerator")
 
     # ----------------------------------------------------------------------
@@ -59,13 +55,16 @@ class AutonomousReportGenerator:
             self.logger.info("Creating analyst personas", topic=topic)
             structured_llm = self.llm.with_structured_output(Perspectives)
             system_prompt = CREATE_ANALYSTS_PROMPT.render(
-                topic=topic, max_analysts=max_analysts,
+                topic=topic,
+                max_analysts=max_analysts,
                 human_analyst_feedback=human_analyst_feedback,
             )
-            analysts = structured_llm.invoke([
-                SystemMessage(content=system_prompt),
-                HumanMessage(content="Generate the set of analysts."),
-            ])
+            analysts = structured_llm.invoke(
+                [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content="Generate the set of analysts."),
+                ]
+            )
             self.logger.info("Analysts created", count=len(analysts.analysts))
             return {"analysts": analysts.analysts}
         except Exception as e:
@@ -92,10 +91,9 @@ class AutonomousReportGenerator:
                 sections = ["No sections generated — please verify interview stage."]
             self.logger.info("Writing report", topic=topic)
             system_prompt = REPORT_WRITER_INSTRUCTIONS.render(topic=topic)
-            report = self.llm.invoke([
-                SystemMessage(content=system_prompt),
-                HumanMessage(content="\n\n".join(sections))
-            ])
+            report = self.llm.invoke(
+                [SystemMessage(content=system_prompt), HumanMessage(content="\n\n".join(sections))]
+            )
             self.logger.info("Report written successfully")
             return {"content": report.content}
         except Exception as e:
@@ -113,10 +111,9 @@ class AutonomousReportGenerator:
             system_prompt = INTRO_CONCLUSION_INSTRUCTIONS.render(
                 topic=topic, formatted_str_sections=formatted_str_sections
             )
-            intro = self.llm.invoke([
-                SystemMessage(content=system_prompt),
-                HumanMessage(content="Write the report introduction")
-            ])
+            intro = self.llm.invoke(
+                [SystemMessage(content=system_prompt), HumanMessage(content="Write the report introduction")]
+            )
             self.logger.info("Introduction generated", length=len(intro.content))
             return {"introduction": intro.content}
         except Exception as e:
@@ -134,10 +131,9 @@ class AutonomousReportGenerator:
             system_prompt = INTRO_CONCLUSION_INSTRUCTIONS.render(
                 topic=topic, formatted_str_sections=formatted_str_sections
             )
-            conclusion = self.llm.invoke([
-                SystemMessage(content=system_prompt),
-                HumanMessage(content="Write the report conclusion")
-            ])
+            conclusion = self.llm.invoke(
+                [SystemMessage(content=system_prompt), HumanMessage(content="Write the report conclusion")]
+            )
             self.logger.info("Conclusion generated", length=len(conclusion.content))
             return {"conclusion": conclusion.content}
         except Exception as e:
@@ -160,11 +156,7 @@ class AutonomousReportGenerator:
                 except Exception:
                     pass
 
-            final_report = (
-                state["introduction"] + "\n\n---\n\n" +
-                content + "\n\n---\n\n" +
-                state["conclusion"]
-            )
+            final_report = state["introduction"] + "\n\n---\n\n" + content + "\n\n---\n\n" + state["conclusion"]
             if sources:
                 final_report += "\n\n## Sources\n" + sources
 
@@ -175,8 +167,7 @@ class AutonomousReportGenerator:
             raise ResearchAnalystException("Failed to finalize report", e)
 
     # ----------------------------------------------------------------------
-    def save_report(self, final_report: str, topic: str,
-                    format: str = "docx"):
+    def save_report(self, final_report: str, topic: str, format: str = "docx"):
         """Save the report as DOCX or PDF, each in its own subfolder."""
         try:
             self.logger.info("Saving report", topic=topic, format=format)
@@ -231,6 +222,7 @@ class AutonomousReportGenerator:
     def _save_as_pdf(self, text: str, file_path: str):
         """Helper: save as PDF with centered text block, wrapping, and clean layout."""
         from textwrap import wrap
+
         try:
             c = canvas.Canvas(file_path, pagesize=letter)
             width, height = letter
@@ -338,11 +330,7 @@ class AutonomousReportGenerator:
 
             builder.add_edge(START, "create_analyst")
             builder.add_edge("create_analyst", "human_feedback")
-            builder.add_conditional_edges(
-                "human_feedback",
-                initiate_all_interviews,
-                ["conduct_interview", END]
-            )
+            builder.add_conditional_edges("human_feedback", initiate_all_interviews, ["conduct_interview", END])
             builder.add_edge("conduct_interview", "write_report")
             builder.add_edge("conduct_interview", "write_introduction")
             builder.add_edge("conduct_interview", "write_conclusion")

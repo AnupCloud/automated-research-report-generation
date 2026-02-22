@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 # In[1]:
 
@@ -10,7 +9,8 @@ print("all ok")
 # In[2]:
 
 
-import sys, os
+import os
+import sys
 
 # Get project root — one level up from 'research_and_analyst'
 project_root = os.path.abspath(os.path.join(os.getcwd(), "../.."))
@@ -23,7 +23,6 @@ print("Project root added to path:", project_root)
 
 
 from research_and_analyst.utils.model_loader import ModelLoader
-
 
 # In[4]:
 
@@ -46,28 +45,24 @@ llm.invoke("hi").content
 # In[7]:
 
 
-from typing import List
-from typing_extensions import TypedDict
-from pydantic import BaseModel, Field
 
-
-# In[8]:
-
-
-from langgraph.graph import StateGraph, START, END
-from langchain_core.messages import AIMessage,HumanMessage , SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.checkpoint.memory import MemorySaver
 
+# In[8]:
+from langgraph.graph import END, START, StateGraph
+from pydantic import BaseModel, Field
+from typing_extensions import TypedDict
 
 # #health
-# 
+#
 # Analyst(
 #         name="Dr. Neha Patel",
 #         role="Medical Data Scientist",
 #         affiliation="Stanford Medicine",
 #         description="Focuses on predictive models for patient outcomes."
 #         ),
-# 
+#
 # Analyst(
 #     name="Dr. Arun Verma",
 #     role="Ethics Researcher",
@@ -146,7 +141,7 @@ print(analyst.persona)
 
 
 class Perspectives(BaseModel):
-       analysts: List[Analyst] = Field(description="Comprehensive list of analysts with their roles and affiliations.")
+       analysts: list[Analyst] = Field(description="Comprehensive list of analysts with their roles and affiliations.")
 
 
 # In[17]:
@@ -156,7 +151,7 @@ class GenerateAnalystsState(TypedDict):
     topic: str #research topic
     max_analysts: int # number of analyst
     human_analyst_feedback: str # Human feedback
-    analysts: List[Analyst] # Analyst asking questions
+    analysts: list[Analyst] # Analyst asking questions
 
 
 
@@ -166,7 +161,7 @@ class GenerateAnalystsState(TypedDict):
 GenerateAnalystsState(
     topic = "finance",
     max_analysts= 5,
-    human_analyst_feedback= "give the real info",  
+    human_analyst_feedback= "give the real info",
 )
 
 
@@ -273,7 +268,6 @@ def should_continue(state):
 
 from IPython.display import Image, display
 
-
 # In[27]:
 
 
@@ -349,7 +343,7 @@ for event in graph.stream({"topic":topic,
             print(f"Affiliation: {analyst.affiliation}")
             print(f"Role: {analyst.role}")
             print(f"Description: {analyst.description}")
-            print("-" * 50)  
+            print("-" * 50)
 
 
 
@@ -397,7 +391,7 @@ for event in graph.stream({"topic":topic,
             print(f"Affiliation: {analyst.affiliation}")
             print(f"Role: {analyst.role}")
             print(f"Description: {analyst.description}")
-            print("-" * 50)  
+            print("-" * 50)
 
 
 # In[71]:

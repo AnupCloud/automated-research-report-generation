@@ -1,30 +1,109 @@
 [build-system]
-requires = ["setuptools>=68"]         # PEP 660 editable support ke liye naya setuptools
+requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "automated-research-report-generation"
 version = "0.1.0"
-description = "Add your description here"
+description = "An autonomous multi-agent research report generator powered by LangGraph, Google Gemini, and Tavily Search"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "ipykernel>=6.30.1",
+    # ── LangChain / LangGraph ecosystem ──
     "langchain-community>=0.3.30",
     "langchain-core>=0.3.78",
     "langchain-google-genai==2.1.8",
     "langchain-groq==0.3.6",
     "langchain-openai==0.3.32",
     "langgraph>=0.6.8",
-    "structlog==25.4.0",
+    # ── Web search & knowledge ──
     "tavily-python>=0.7.12",
     "wikipedia>=1.4.0",
+    # ── Web framework ──
+    "fastapi>=0.120.0",
+    "uvicorn>=0.38.0",
+    "jinja2>=3.1.6",
+    "httpx>=0.28.1",
+    "aiofiles>=23.2.1",
+    "python-multipart>=0.0.22",
+    # ── Report generation ──
+    "python-docx>=1.2.0",
+    "reportlab>=4.4.4",
+    # ── Database & Auth ──
+    "sqlalchemy>=2.0.43",
+    "bcrypt>=3.2.2",
+    "passlib>=1.7.4",
+    # ── Config & Logging ──
+    "structlog==25.4.0",
+    "python-dotenv>=1.2.1",
+    "pyyaml>=6.0",
+    # ── Dev / Notebook ──
+    "ipykernel>=6.30.1",
 ]
 
-# Optional: authors, license
 authors = [{ name = "Sunny Savita" }]
-license = { text = "Proprietary" }
+license = { text = "MIT" }
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "httpx>=0.28.1",
+    "ruff>=0.9",
+    "mypy>=1.14",
+    "pre-commit>=4.0",
+]
+
+[project.scripts]
+serve = "research_and_analyst.api.main:app"
 
 [tool.setuptools.packages.find]
-where = ["research_and_analyst"]
+where = ["."]
 
+# ── Ruff (linter + formatter) ────────────────────────────────
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+src = ["research_and_analyst", "tests"]
+exclude = ["research_and_analyst/notebook/"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+    "SIM",  # flake8-simplify
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "B008",   # do not perform function calls in argument defaults (FastAPI depends on this)
+    "B904",   # raise-from (custom exception already captures traceback chain)
+    "B005",   # strip with multi-char string
+    "B017",   # blind exception in pytest.raises (acceptable in tests)
+    "UP007",  # Use X | Y for union types (not always readable)
+    "SIM105", # contextlib.suppress preference (style choice)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["research_and_analyst"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+# ── Pytest ────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-v --tb=short"
+
+# ── Mypy ──────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+check_untyped_defs = true
+exclude = ["research_and_analyst/notebook/"]
