@@ -307,7 +307,3 @@ The `Jenkinsfile` pipeline handles Azure Container Apps deployment:
 | [Changelog](CHANGELOG.md) | Version history |
 
 ---
-
-## 📝 License
-
-[MIT License](LICENSE) — Developed by Sunny Savita.
